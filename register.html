@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Page</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            width: 100%;
+            background-color: #04AA6D;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #059862;
+        }
+        
+        .captcha-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .error-message {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .links a {
+            color: #04AA6D;
+            text-decoration: none;
+        }
+        
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <form id="registerForm">
+        <div class="container">
+            <label for="uname"><b>Name</b></label>
+            <input id="uname" type="text" placeholder="Enter name" name="uname" required>
+            
+            <label for="psw"><b>Password</b></label>
+            <input id="psw" type="password" placeholder="Enter Password" name="psw" required>
+            
+            <label for="email"><b>Email</b></label>
+            <input id="email" type="email" placeholder="Enter Email" name="email" required>
+            
+            <label for="role"><b>Role</b></label>
+            <select name="role" id="role">
+                <option value="member">Member</option>
+                <option value="president">President</option>
+                <option value="secretary">Secretary</option>
+                <option value="treasurer">Treasurer</option>
+            </select>
+            <div id="captcha-container" class="captcha-container" style="display: none;">
+                <div class="g-recaptcha" data-sitekey="6LeAVJQrAAAAAKrYpLXAUVfGBLCl7u4TVHfcoPjx"></div>
+            </div>
+            <div id="captcha-error" class="error-message"></div>
+
+            <button type="submit">Register</button>
+        </div>
+        <div class="container" style="background-color:f1f1f1">
+            <span class="psw"><a href="login.html">Login</a></span>
+        </div>
+    </form>
+</body>
+<script>
+    function toggleCaptcha() {
+        const role = document.getElementById('role').value;
+        const captchaContainer = document.getElementById('captcha-container');
+        
+        if (role === 'member') {
+            captchaContainer.style.display = 'block';
+        } else {
+            captchaContainer.style.display = 'none';
+            
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
+        }
+    }
+
+    function processForm(event) {
+        event.preventDefault();
+
+        const uname = document.getElementById('uname');
+        const psw = document.getElementById('psw');
+        const email = document.getElementById('email');
+        const role = document.getElementById('role').value;
+        const captchaError = document.getElementById('captcha-error');
+
+        
+        captchaError.textContent = '';
+
+        
+        let captchaResponse = '';
+        if (role === 'member') {
+            captchaResponse = grecaptcha.getResponse();
+            if (!captchaResponse) {
+                captchaError.textContent = 'Please complete the CAPTCHA verification.';
+                return;
+            }
+        }
+
+        var data = JSON.stringify({
+            "name": uname.value,
+            "password": psw.value,
+            "email": email.value,
+            "captcha": captchaResponse 
+        });
+
+        console.log(data, uname, psw, email, role);
+        
+        var xhr = new XMLHttpRequest();
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === 4) {
+                try {
+                    console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    alert(response.message);
+                    
+                    
+                    if (role === 'member' && typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
+                    
+                    
+                    if (this.status === 201) {
+                        document.getElementById('registerForm').reset();
+                        toggleCaptcha(); 
+                    }
+                } catch (error) {
+                    alert('Server error. Please try again.');
+                    if (role === 'member' && typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
+                }
+            }
+        });
+        
+        xhr.open("POST", "register-" + role);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(data);
+    }
+    
+    const form = document.getElementById('registerForm');
+    const roleSelect = document.getElementById('role');
+    
+    form.addEventListener('submit', processForm);
+    roleSelect.addEventListener('change', toggleCaptcha);
+    
+    window.addEventListener('load', toggleCaptcha);
+</script>
+</html>

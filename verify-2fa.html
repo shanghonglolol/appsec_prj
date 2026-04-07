@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication</title>
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+            max-width: 400px;
+            margin: 50px auto;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #04AA6D;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            padding: 16px;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+
+<body>
+    <form id="verify2faForm">
+        <div class="container">
+            <h2>Two-Factor Authentication</h2>
+            <div class="info">Check your email for a 6-digit verification code</div>
+            <input type="text" id="code" placeholder="Enter 6-digit code" maxlength="6" required>
+            <button type="submit">Verify Code</button>
+            <button type="button" id="resendBtn">Resend Code</button>
+            <div id="message"></div>
+        </div>
+    </form>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+
+        if (!email) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('verify2faForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const code = document.getElementById('code').value;
+            const messageDiv = document.getElementById('message');
+
+            const xhr = new XMLHttpRequest();
+            xhr.addEventListener("readystatechange", function () {
+                if (this.readyState === 4) {
+                    const response = JSON.parse(this.responseText);
+                    if (this.status === 200) {
+                        localStorage.setItem('token', response.token);
+                        window.location.href = 'member.html';
+                    } else {
+                        messageDiv.innerHTML = `<div class="message error">${response.message}</div>`;
+                    }
+                }
+            });
+
+            xhr.open("POST", "verify-2fa");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify({ email: email, code: code }));
+        });
+
+        document.getElementById('resendBtn').addEventListener('click', function () {
+            const messageDiv = document.getElementById('message');
+
+            const xhr = new XMLHttpRequest();
+            xhr.addEventListener("readystatechange", function () {
+                if (this.readyState === 4) {
+                    const response = JSON.parse(this.responseText);
+                    messageDiv.innerHTML = `<div class="message ${this.status === 200 ? 'success' : 'error'}">${response.message}</div>`;
+                }
+            });
+
+            xhr.open("POST", "resend-2fa");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify({ email: email }));
+        });
+    </script>
+</body>
+
+</html>
